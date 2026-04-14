@@ -355,6 +355,11 @@ function renderWeek() {
   renderAccumulated();
 }
 
+function isDayRegistered(d) {
+  if(d.type==='vacaciones'||d.type==='festivo') return true;
+  return calcDayHours(d)!==null;
+}
+
 function renderMonths() {
   const now=new Date();
   const year=now.getFullYear()+yearOffset;
@@ -377,7 +382,7 @@ function renderMonths() {
         const dow=new Date(ds+'T12:00:00').getDay();
         if(dow===0||dow===6) continue;
         const d=allData[ds];
-        if(!d) continue;
+        if(!d||!isDayRegistered(d)) continue;
         hasDays=true;
         const h=calcDayHours(d);
         if(d.type!=='festivo') mTarget+=DAILY;
@@ -414,9 +419,13 @@ function renderMonths() {
 }
 
 function renderAccumulated() {
+  const today=dateToKey(new Date());
   let tw=0,tt=0;
   Object.keys(allData).forEach(ds=>{
-    const d=allData[ds]; const h=calcDayHours(d);
+    if(ds>today) return;
+    const d=allData[ds];
+    if(!isDayRegistered(d)) return;
+    const h=calcDayHours(d);
     if(d.type!=='festivo') tt+=DAILY;
     if(h!==null) tw+=h;
   });
