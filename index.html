@@ -134,6 +134,14 @@
 .tsep { font-size: 11px; color: var(--text3); padding-bottom: 8px; text-align: center; }
 .tdivsep { font-size: 11px; color: var(--border2); padding-bottom: 8px; text-align: center; }
 
+.reset-lunch {
+  display: block; width: 100%; margin-top: 8px; padding: 6px 0;
+  font-size: 12px; font-family: 'DM Sans', sans-serif; font-weight: 500;
+  color: var(--text3); background: none; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s;
+}
+.reset-lunch:active { background: var(--surface2); }
+
 .note-green { font-size: 12px; color: var(--green); padding: 4px 0; }
 .note-gray { font-size: 12px; color: var(--text3); padding: 4px 0; }
 
@@ -302,6 +310,7 @@ function renderWeek() {
 
     const card=document.createElement('div');
     card.className='day-card';
+    card.dataset.date=ds;
     card.innerHTML=`
       <div class="day-head">
         <div class="day-name-wrap">
@@ -327,7 +336,9 @@ function renderWeek() {
         <div class="tg"><label>Comida ini</label><input type="time" value="${d.comidaIni}" onchange="setField('${ds}','comidaIni',this.value)"></div>
         <span class="tsep">–</span>
         <div class="tg"><label>Comida fin</label><input type="time" value="${d.comidaFin}" onchange="setField('${ds}','comidaFin',this.value)"></div>
-      </div>`:d.type==='vacaciones'?
+      </div>
+      ${(d.comidaIni||d.comidaFin)?`<button class="reset-lunch" onclick="resetLunch('${ds}')">Restablecer comida</button>`:''}
+      `:d.type==='vacaciones'?
       `<div class="note-green">6,8h contabilizadas automáticamente</div>`:
       `<div style="font-size:12px;color:var(--amber-text);padding:4px 0">Festivo — 6,8h contabilizadas automáticamente</div>`}
     `;
@@ -419,7 +430,75 @@ function renderAccumulated() {
 }
 
 function setType(ds,type) { getDayData(ds).type=type; saveData(); currentView==='semana'?renderWeek():renderMonths(); }
-function setField(ds,field,val) { getDayData(ds)[field]=val; saveData(); currentView==='semana'?renderWeek():renderMonths(); }
+
+function setField(ds,field,val) {
+  getDayData(ds)[field]=val;
+  saveData();
+  updateDayInPlace(ds);
+  updateWeekMetrics();
+  renderAccumulated();
+}
+
+function updateDayInPlace(ds) {
+  const card=document.querySelector(`.day-card[data-date="${ds}"]`);
+  if(!card) return;
+  const d=getDayData(ds);
+  const hours=calcDayHours(d);
+  const isWork=d.type!=='festivo';
+  const bal=hours!==null?(hours-(d.type==='festivo'?0:DAILY)):null;
+  const balClass=bal===null?'':(bal>=0?'green':'red');
+
+  const hoursEl=card.querySelector('.day-hours');
+  if(hoursEl) {
+    hoursEl.textContent=hours!==null?fmtH(hours):'—';
+    hoursEl.className='day-hours '+(hours!==null&&isWork?balClass:'');
+  }
+
+  let balEl=card.querySelector('.day-bal');
+  if(bal!==null) {
+    if(!balEl) { balEl=document.createElement('div'); hoursEl.parentElement.appendChild(balEl); }
+    balEl.className='day-bal '+balClass;
+    balEl.textContent=fmtBal(bal);
+  } else if(balEl) { balEl.remove(); }
+
+  // Show/hide reset lunch button
+  const existingReset=card.querySelector('.reset-lunch');
+  if(d.comidaIni||d.comidaFin) {
+    if(!existingReset) {
+      const btn=document.createElement('button');
+      btn.className='reset-lunch';
+      btn.textContent='Restablecer comida';
+      btn.onclick=()=>resetLunch(ds);
+      const grid=card.querySelector('.time-grid');
+      if(grid) grid.after(btn);
+    }
+  } else if(existingReset) { existingReset.remove(); }
+}
+
+function updateWeekMetrics() {
+  const dates=getWeekDates(weekOffset);
+  let weekWorked=0,weekTarget=0;
+  dates.forEach(ds=>{
+    const d=getDayData(ds);
+    const hours=calcDayHours(d);
+    if(d.type!=='festivo') weekTarget+=DAILY;
+    if(hours!==null) weekWorked+=hours;
+  });
+  const bal=weekWorked-weekTarget;
+  const bc=bal>=0?'green':'red';
+  document.getElementById('m-worked').textContent=fmtH(weekWorked);
+  document.getElementById('m-target').textContent=fmtH(weekTarget);
+  const bEl=document.getElementById('m-balance');
+  bEl.textContent=fmtBal(bal);
+  bEl.className='val '+(weekTarget>0?bc:'');
+}
+
+function resetLunch(ds) {
+  const d=getDayData(ds);
+  d.comidaIni=''; d.comidaFin='';
+  saveData();
+  renderWeek();
+}
 
 loadData();
 renderWeek();
