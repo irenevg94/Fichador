@@ -409,7 +409,7 @@ function renderAccumulated() {
 }
 
 function setType(ds,type) { getDayData(ds).type=type; saveData(); currentView==='semana'?renderWeek():renderMonths(); }
-function setField(ds,field,val) { getDayData(ds)[field]=val; saveData(); renderAccumulated(); }
+function setField(ds,field,val) { getDayData(ds)[field]=val; saveData(); currentView==='semana'?renderWeek():renderMonths(); }
 
 loadData();
 renderWeek();
