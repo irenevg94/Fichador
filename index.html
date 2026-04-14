@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Fichador">
+<meta name="theme-color" content="#f5f2ed">
+<title>Fichador de horas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f2ed;
+    --surface: #ffffff;
+    --surface2: #f0ece6;
+    --border: #e0dbd3;
+    --border2: #ccc7be;
+    --text: #1a1816;
+    --text2: #6b6560;
+    --text3: #9e9890;
+    --green: #1a7a56;
+    --green-bg: #e6f5ee;
+    --red: #a0322d;
+    --red-bg: #f7eae9;
+    --accent: #2d5be3;
+    --accent-bg: #eef1fc;
+    --amber-bg: #fef3e2;
+    --amber-text: #8a5a00;
+    --gray-bg: #eeebe5;
+    --gray-text: #5a5652;
+    --radius: 14px;
+    --radius-sm: 9px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); }
+
+.app { max-width: 480px; margin: 0 auto; padding: 0 0 100px; min-height: 100vh; }
+
+.topbar {
+background: var(–bg);
+padding: 52px 20px 16px;
+position: sticky;
+top: 0;
+z-index: 10;
+}
+.topbar h1 { font-size: 26px; font-weight: 500; letter-spacing: -0.5px; }
+.topbar p { font-size: 13px; color: var(–text2); margin-top: 2px; font-family: ‘DM Mono’, monospace; }
+
+.tabs {
+display: flex;
+background: var(–surface2);
+border-radius: 11px;
+padding: 3px;
+margin: 12px 20px 0;
+}
+.tab {
+flex: 1; padding: 8px; border: none; background: none; border-radius: 9px;
+font-size: 13px; font-weight: 500; font-family: ‘DM Sans’, sans-serif;
+color: var(–text2); cursor: pointer; transition: all 0.18s;
+}
+.tab.active { background: var(–surface); color: var(–text); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+.content { padding: 16px 20px 0; }
+
+.nav-row {
+display: flex; align-items: center; justify-content: space-between;
+margin-bottom: 16px;
+}
+.nav-btn {
+width: 36px; height: 36px; border-radius: 50%;
+border: 1px solid var(–border); background: var(–surface);
+font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+color: var(–text); transition: background 0.15s;
+}
+.nav-btn:active { background: var(–surface2); }
+.nav-label { font-size: 14px; font-weight: 500; text-align: center; }
+
+.metrics {
+display: grid; grid-template-columns: repeat(3, minmax(0,1fr));
+gap: 8px; margin-bottom: 16px;
+}
+.metric {
+background: var(–surface); border-radius: var(–radius-sm);
+padding: 12px 10px; text-align: center;
+border: 1px solid var(–border);
+}
+.metric .val { font-size: 18px; font-weight: 500; font-family: ‘DM Mono’, monospace; letter-spacing: -0.5px; }
+.metric .lbl { font-size: 10px; color: var(–text2); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.day-card {
+background: var(–surface); border-radius: var(–radius);
+border: 1px solid var(–border); padding: 14px 16px;
+margin-bottom: 10px; transition: border-color 0.15s;
+}
+.day-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.day-name-wrap { display: flex; flex-direction: column; }
+.day-name { font-size: 15px; font-weight: 500; }
+.day-date { font-size: 11px; color: var(–text3); font-family: ‘DM Mono’, monospace; margin-top: 1px; }
+.day-hours { font-size: 15px; font-weight: 500; font-family: ‘DM Mono’, monospace; }
+.day-bal { font-size: 11px; text-align: right; margin-top: 1px; font-family: ‘DM Mono’, monospace; }
+
+.type-btns { display: flex; gap: 6px; margin-bottom: 10px; }
+.type-btn {
+flex: 1; font-size: 12px; font-weight: 500; padding: 7px 0;
+border: 1px solid var(–border); border-radius: var(–radius-sm);
+background: none; cursor: pointer; font-family: ‘DM Sans’, sans-serif;
+color: var(–text2); transition: all 0.15s;
+}
+.type-btn.act-work { background: var(–accent-bg); color: var(–accent); border-color: #b0bcf0; }
+.type-btn.act-vac { background: var(–green-bg); color: var(–green); border-color: #8fcdb0; }
+.type-btn.act-festivo { background: var(–amber-bg); color: var(–amber-text); border-color: #f0c97a; }
+
+.time-grid { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; gap: 4px; align-items: end; }
+.tg { display: flex; flex-direction: column; }
+.tg label { font-size: 9px; color: var(–text3); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; text-align: center; }
+.tg input[type=time] {
+width: 100%; font-size: 13px; font-family: ‘DM Mono’, monospace;
+border: 1px solid var(–border); border-radius: var(–radius-sm);
+padding: 7px 4px; background: var(–surface2); color: var(–text);
+text-align: center; -webkit-appearance: none;
+}
+.tg input[type=time]:focus { outline: none; border-color: var(–accent); }
+.tsep { font-size: 11px; color: var(–text3); padding-bottom: 8px; text-align: center; }
+.tdivsep { font-size: 11px; color: var(–border2); padding-bottom: 8px; text-align: center; }
+
+.note-green { font-size: 12px; color: var(–green); padding: 4px 0; }
+.note-gray { font-size: 12px; color: var(–text3); padding: 4px 0; }
+
+.green { color: var(–green) !important; }
+.red { color: var(–red) !important; }
+
+.month-card {
+background: var(–surface); border-radius: var(–radius);
+border: 1px solid var(–border); padding: 16px;
+margin-bottom: 10px;
+}
+.month-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.month-name { font-size: 16px; font-weight: 500; }
+.month-bal { font-size: 15px; font-weight: 500; font-family: ‘DM Mono’, monospace; }
+.mrow { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(–border); }
+.mrow:last-of-type { border-bottom: none; }
+.mrow .k { color: var(–text2); }
+.mrow .v { font-family: ‘DM Mono’, monospace; font-weight: 500; }
+.bar { height: 4px; background: var(–surface2); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+
+.acum-box {
+background: var(–surface); border-radius: var(–radius);
+border: 1px solid var(–border); padding: 16px; margin-top: 8px;
+}
+.acum-box h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(–text3); margin-bottom: 12px; }
+.arow { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(–border); }
+.arow:last-child { border-bottom: none; }
+.arow .k { color: var(–text2); }
+.arow .v { font-family: ‘DM Mono’, monospace; font-weight: 500; }
+
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(–text2); font-size: 14px; line-height: 1.6; }
+</style>
+
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1>Fichador</h1>
+    <p>34h/semana · 6,8h/día</p>
+    <div class="tabs">
+      <button class="tab active" onclick="setView('semana')">Semana</button>
+      <button class="tab" onclick="setView('mes')">Mes</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div id="view-semana">
+      <div class="nav-row">
+        <button class="nav-btn" onclick="changeWeek(-1)">‹</button>
+        <span class="nav-label" id="week-label"></span>
+        <button class="nav-btn" onclick="changeWeek(1)">›</button>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="val" id="m-worked">—</div><div class="lbl">Trabajadas</div></div>
+        <div class="metric"><div class="val" id="m-target">—</div><div class="lbl">Objetivo</div></div>
+        <div class="metric"><div class="val" id="m-balance">—</div><div class="lbl">Balance</div></div>
+      </div>
+      <div id="days-container"></div>
+    </div>
+
+```
+<div id="view-mes" style="display:none">
+  <div class="nav-row">
+    <button class="nav-btn" onclick="changeYear(-1)">‹</button>
+    <span class="nav-label" id="year-label"></span>
+    <button class="nav-btn" onclick="changeYear(1)">›</button>
+  </div>
+  <div id="months-container"></div>
+</div>
+
+<div class="acum-box">
+  <h2>Balance acumulado total</h2>
+  <div class="arow"><span class="k">Horas trabajadas</span><span class="v" id="a-worked">—</span></div>
+  <div class="arow"><span class="k">Objetivo acumulado</span><span class="v" id="a-target">—</span></div>
+  <div class="arow"><span class="k">Balance total</span><span class="v" id="a-balance">—</span></div>
+</div>
+```
+
+  </div>
+</div>
+
+<script>
+const DAILY = 6.8, WEEKLY = 34;
+const DAYS_ES = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
+const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const SK = 'fichador_v1';
+let weekOffset = 0, yearOffset = 0, currentView = 'semana', allData = {};
+
+function loadData() { try { allData = JSON.parse(localStorage.getItem(SK)||'{}'); } catch(e){ allData={}; } }
+function saveData() { try { localStorage.setItem(SK, JSON.stringify(allData)); } catch(e){} }
+function getDayData(ds) { if(!allData[ds]) allData[ds]={type:'trabajo',entrada:'',salida:'',comidaIni:'',comidaFin:''}; return allData[ds]; }
+
+function timeToH(t) { if(!t) return null; const [h,m]=t.split(':').map(Number); return h+m/60; }
+function calcDayHours(d) {
+  if(d.type==='vacaciones') return DAILY;
+  if(d.type==='festivo') return DAILY;
+  const e=timeToH(d.entrada), s=timeToH(d.salida);
+  const ci=timeToH(d.comidaIni), cf=timeToH(d.comidaFin);
+  if(e===null||s===null) return null;
+  let tot=s-e;
+  if(ci!==null&&cf!==null&&cf>ci) tot-=(cf-ci);
+  return tot>0?tot:0;
+}
+function fmtH(h) {
+  if(h===null) return '—';
+  const sign=h<0?'-':'';
+  const abs=Math.abs(h);
+  const hrs=Math.floor(abs);
+  const mins=Math.round((abs-hrs)*60);
+  return `${sign}${hrs}h${mins>0?' '+mins+'m':''}`;
+}
+function fmtBal(b) { if(b===null||isNaN(b)) return '—'; return (b>=0?'+':'')+fmtH(b); }
+
+function getMonday(offset) {
+  const now=new Date(); const day=now.getDay();
+  const m=new Date(now);
+  m.setDate(now.getDate()-(day===0?6:day-1)+offset*7);
+  m.setHours(0,0,0,0); return m;
+}
+function dateToKey(d) {
+  const y=d.getFullYear(), mo=String(d.getMonth()+1).padStart(2,'0'), dy=String(d.getDate()).padStart(2,'0');
+  return `${y}-${mo}-${dy}`;
+}
+function getWeekDates(offset) {
+  const m=getMonday(offset);
+  return Array.from({length:5},(_,i)=>{const d=new Date(m);d.setDate(m.getDate()+i);return dateToKey(d);});
+}
+function getWeekLabel(offset) {
+  const dates=getWeekDates(offset);
+  const fmt=ds=>new Date(ds+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'});
+  if(offset===0) return 'Esta semana';
+  if(offset===-1) return 'Semana pasada';
+  return `${fmt(dates[0])} – ${fmt(dates[4])}`;
+}
+
+function setView(v) {
+  currentView=v;
+  document.getElementById('view-semana').style.display=v==='semana'?'':'none';
+  document.getElementById('view-mes').style.display=v==='mes'?'':'none';
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&v==='semana')||(i===1&&v==='mes')));
+  v==='mes'?renderMonths():renderWeek();
+}
+
+function changeWeek(d) { weekOffset+=d; renderWeek(); }
+function changeYear(d) { yearOffset+=d; renderMonths(); }
+
+function renderWeek() {
+  const dates=getWeekDates(weekOffset);
+  document.getElementById('week-label').textContent=getWeekLabel(weekOffset);
+  const container=document.getElementById('days-container');
+  container.innerHTML='';
+  let weekWorked=0, weekTarget=0;
+
+  dates.forEach((ds,i)=>{
+    const d=getDayData(ds);
+    const hours=calcDayHours(d);
+    const isWork=d.type!=='festivo';
+    if(isWork) weekTarget+=DAILY;
+    if(hours!==null) weekWorked+=hours;
+    const bal=hours!==null?(hours-(d.type==='festivo'?0:DAILY)):null;
+    const balClass=bal===null?'':(bal>=0?'green':'red');
+    const dateLabel=new Date(ds+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'});
+
+    const card=document.createElement('div');
+    card.className='day-card';
+    card.innerHTML=`
+      <div class="day-head">
+        <div class="day-name-wrap">
+          <span class="day-name">${DAYS_ES[i]}</span>
+          <span class="day-date">${dateLabel}</span>
+        </div>
+        <div>
+          <div class="day-hours ${hours!==null&&isWork?balClass:''}">${hours!==null?fmtH(hours):'—'}</div>
+          ${bal!==null?`<div class="day-bal ${balClass}">${fmtBal(bal)}</div>`:''}
+        </div>
+      </div>
+      <div class="type-btns">
+        <button class="type-btn ${d.type==='trabajo'?'act-work':''}" onclick="setType('${ds}','trabajo')">Trabajo</button>
+        <button class="type-btn ${d.type==='vacaciones'?'act-vac':''}" onclick="setType('${ds}','vacaciones')">Vacaciones</button>
+        <button class="type-btn ${d.type==='festivo'?'act-festivo':''}" onclick="setType('${ds}','festivo')">Festivo</button>
+      </div>
+      ${d.type==='trabajo'?`
+      <div class="time-grid">
+        <div class="tg"><label>Entrada</label><input type="time" value="${d.entrada}" onchange="setField('${ds}','entrada',this.value)"></div>
+        <span class="tsep">–</span>
+        <div class="tg"><label>Salida</label><input type="time" value="${d.salida}" onchange="setField('${ds}','salida',this.value)"></div>
+        <span class="tdivsep">|</span>
+        <div class="tg"><label>Comida ini</label><input type="time" value="${d.comidaIni}" onchange="setField('${ds}','comidaIni',this.value)"></div>
+        <span class="tsep">–</span>
+        <div class="tg"><label>Comida fin</label><input type="time" value="${d.comidaFin}" onchange="setField('${ds}','comidaFin',this.value)"></div>
+      </div>`:d.type==='vacaciones'?
+      `<div class="note-green">6,8h contabilizadas automáticamente</div>`:
+      `<div style="font-size:12px;color:var(--amber-text);padding:4px 0">Festivo — 6,8h contabilizadas automáticamente</div>`}
+    `;
+    container.appendChild(card);
+  });
+
+  const bal=weekWorked-weekTarget;
+  const bc=bal>=0?'green':'red';
+  document.getElementById('m-worked').textContent=fmtH(weekWorked);
+  document.getElementById('m-target').textContent=fmtH(weekTarget);
+  const bEl=document.getElementById('m-balance');
+  bEl.textContent=fmtBal(bal);
+  bEl.className='val '+(weekTarget>0?bc:'');
+  renderAccumulated();
+}
+
+function renderMonths() {
+  const now=new Date();
+  const year=now.getFullYear()+yearOffset;
+  document.getElementById('year-label').textContent=year;
+  const container=document.getElementById('months-container');
+  container.innerHTML='';
+
+  let runningBal=0;
+  const allKeys=Object.keys(allData).sort();
+  const firstYear=allKeys.length?parseInt(allKeys[0].slice(0,4)):year;
+  let hasAny=false;
+
+  for(let yr=firstYear; yr<=year; yr++) {
+    for(let mo=0; mo<12; mo++) {
+      if(yr===year&&mo>now.getMonth()) break;
+      let mWorked=0, mTarget=0, hasDays=false;
+      const daysInMonth=new Date(yr,mo+1,0).getDate();
+      for(let day=1;day<=daysInMonth;day++) {
+        const ds=`${yr}-${String(mo+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const dow=new Date(ds+'T12:00:00').getDay();
+        if(dow===0||dow===6) continue;
+        const d=allData[ds];
+        if(!d) continue;
+        hasDays=true;
+        const h=calcDayHours(d);
+        if(d.type!=='festivo') mTarget+=DAILY;
+        if(h!==null) mWorked+=h;
+      }
+      const mBal=mWorked-mTarget;
+      if(hasDays) runningBal+=mBal;
+      if(yr!==year||!hasDays) continue;
+      hasAny=true;
+
+      const card=document.createElement('div');
+      card.className='month-card';
+      const balClass=mBal>=0?'green':'red';
+      const runClass=runningBal>=0?'green':'red';
+      const pct=Math.min(100,mTarget>0?(mWorked/mTarget)*100:0);
+      const barColor=mBal>=0?'#1a7a56':'#a0322d';
+      card.innerHTML=`
+        <div class="month-head">
+          <span class="month-name">${MONTHS_ES[mo]}</span>
+          <span class="month-bal ${balClass}">${fmtBal(mBal)}</span>
+        </div>
+        <div class="mrow"><span class="k">Horas trabajadas</span><span class="v">${fmtH(mWorked)}</span></div>
+        <div class="mrow"><span class="k">Objetivo del mes</span><span class="v">${fmtH(mTarget)}</span></div>
+        <div class="mrow"><span class="k">Acumulado hasta aquí</span><span class="v ${runClass}">${fmtBal(runningBal)}</span></div>
+        <div class="bar"><div class="bar-fill" style="width:${pct.toFixed(1)}%;background:${barColor}"></div></div>
+      `;
+      container.appendChild(card);
+    }
+  }
+  if(!hasAny) {
+    container.innerHTML='<div class="empty-state">Aún no hay datos para este año.<br>Ficha días en la vista semanal.</div>';
+  }
+  renderAccumulated();
+}
+
+function renderAccumulated() {
+  let tw=0,tt=0;
+  Object.keys(allData).forEach(ds=>{
+    const d=allData[ds]; const h=calcDayHours(d);
+    if(d.type!=='festivo') tt+=DAILY;
+    if(h!==null) tw+=h;
+  });
+  const tb=tw-tt;
+  const bc=tb>=0?'green':'red';
+  document.getElementById('a-worked').textContent=fmtH(tw);
+  document.getElementById('a-target').textContent=fmtH(tt);
+  const el=document.getElementById('a-balance');
+  el.textContent=fmtBal(tb);
+  el.className='v '+(tt>0?bc:'');
+}
+
+function setType(ds,type) { getDayData(ds).type=type; saveData(); currentView==='semana'?renderWeek():renderMonths(); }
+function setField(ds,field,val) { getDayData(ds)[field]=val; saveData(); renderAccumulated(); }
+
+loadData();
+renderWeek();
+</script>
+
+</body>
+</html>
