@@ -240,7 +240,7 @@ function getDayData(ds) { if(!allData[ds]) allData[ds]={type:'trabajo',entrada:'
 function timeToH(t) { if(!t) return null; const [h,m]=t.split(':').map(Number); return h+m/60; }
 function calcDayHours(d) {
   if(d.type==='vacaciones') return DAILY;
-  if(d.type==='festivo') return 0;
+  if(d.type==='festivo') return DAILY;
   const e=timeToH(d.entrada), s=timeToH(d.salida);
   const ci=timeToH(d.comidaIni), cf=timeToH(d.comidaFin);
   if(e===null||s===null) return null;
@@ -302,12 +302,11 @@ function renderWeek() {
   dates.forEach((ds,i)=>{
     const d=getDayData(ds);
     const hours=calcDayHours(d);
-    const isFestivo=d.type==='festivo';
     const isRegistered=isDayRegistered(d);
     const isPastOrToday=ds<=today;
-    if(!isFestivo&&isPastOrToday) weekTarget+=DAILY;
+    if(isRegistered&&isPastOrToday) weekTarget+=DAILY;
     if(isRegistered&&hours!==null) weekWorked+=hours;
-    const bal=isRegistered&&!isFestivo&&hours!==null?(hours-DAILY):null;
+    const bal=isRegistered&&hours!==null?(hours-DAILY):null;
     const balClass=bal===null?'':(bal>=0?'green':'red');
     const dateLabel=new Date(ds+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'});
 
@@ -321,9 +320,8 @@ function renderWeek() {
           <span class="day-date">${dateLabel}</span>
         </div>
         <div>
-          ${isFestivo?'':`
-          <div class="day-hours ${hours!==null&&!isFestivo?balClass:''}">${hours!==null?fmtH(hours):'—'}</div>
-          ${bal!==null?`<div class="day-bal ${balClass}">${fmtBal(bal)}</div>`:''}`}
+          <div class="day-hours ${hours!==null?balClass:''}">${hours!==null?fmtH(hours):'—'}</div>
+          ${bal!==null?`<div class="day-bal ${balClass}">${fmtBal(bal)}</div>`:''}
         </div>
       </div>
       <div class="type-btns">
@@ -343,8 +341,8 @@ function renderWeek() {
       </div>
       ${(d.comidaIni||d.comidaFin)?`<button class="reset-lunch" onclick="resetLunch('${ds}')">Restablecer comida</button>`:''}
       `:d.type==='vacaciones'?
-      `<div class="note-green">Vacaciones — no resta del objetivo</div>`:
-      `<div style="font-size:12px;color:var(--amber-text);padding:4px 0">Festivo — no cuenta en el cómputo</div>`}
+      `<div class="note-green">Vacaciones — 6,8h contabilizadas</div>`:
+      `<div style="font-size:12px;color:var(--amber-text);padding:4px 0">Festivo — 6,8h contabilizadas</div>`}
     `;
     container.appendChild(card);
   });
@@ -389,7 +387,7 @@ function renderMonths() {
         if(!d||!isDayRegistered(d)) continue;
         hasDays=true;
         const h=calcDayHours(d);
-        if(d.type!=='festivo') mTarget+=DAILY;
+        mTarget+=DAILY;
         if(h!==null) mWorked+=h;
       }
       const mBal=mWorked-mTarget;
@@ -430,7 +428,7 @@ function renderAccumulated() {
     const d=allData[ds];
     if(!isDayRegistered(d)) return;
     const h=calcDayHours(d);
-    if(d.type!=='festivo') tt+=DAILY;
+    tt+=DAILY;
     if(h!==null) tw+=h;
   });
   const tb=tw-tt;
@@ -457,14 +455,13 @@ function updateDayInPlace(ds) {
   if(!card) return;
   const d=getDayData(ds);
   const hours=calcDayHours(d);
-  const isFestivo=d.type==='festivo';
-  const bal=!isFestivo&&hours!==null?(hours-DAILY):null;
+  const bal=hours!==null?(hours-DAILY):null;
   const balClass=bal===null?'':(bal>=0?'green':'red');
 
   const hoursEl=card.querySelector('.day-hours');
   if(hoursEl) {
     hoursEl.textContent=hours!==null?fmtH(hours):'—';
-    hoursEl.className='day-hours '+(hours!==null&&!isFestivo?balClass:'');
+    hoursEl.className='day-hours '+(hours!==null?balClass:'');
   }
 
   let balEl=card.querySelector('.day-bal');
@@ -495,10 +492,10 @@ function updateWeekMetrics() {
   dates.forEach(ds=>{
     const d=getDayData(ds);
     const hours=calcDayHours(d);
-    const isFestivo=d.type==='festivo';
+    const isRegistered=isDayRegistered(d);
     const isPastOrToday=ds<=today;
-    if(!isFestivo&&isPastOrToday) weekTarget+=DAILY;
-    if(isDayRegistered(d)&&hours!==null) weekWorked+=hours;
+    if(isRegistered&&isPastOrToday) weekTarget+=DAILY;
+    if(isRegistered&&hours!==null) weekWorked+=hours;
   });
   const bal=weekWorked-weekTarget;
   const bc=bal>=0?'green':'red';
